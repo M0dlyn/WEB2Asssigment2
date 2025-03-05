@@ -4,6 +4,11 @@ This project implements two versions of the classic Tic-Tac-Toe game using diffe
 1. Object-Oriented Programming (OOP)
 2. Functional Programming
 
+## Project Structure
+
+The project consists of two standalone HTML files:
+- `oo.html`: Object-oriented implementation with embedded styles and scripts
+- `fun.html`: Functional implementation with embedded styles and scripts
 
 ## Features
 
@@ -45,6 +50,7 @@ Both implementations include:
 - No external libraries or frameworks required
 - Works in modern web browsers
 - Uses only HTML, CSS, and JavaScript
+- All code is embedded within the HTML files
 
 ## Learning Objectives
 

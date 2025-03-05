@@ -3,7 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <title>Tic-Tac-Toe (OOP)</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-top: 0;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 10px;
+            margin: 30px auto;
+            padding: 15px;
+            background: #f0f4f8;
+            border-radius: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            color: #2a5298;
+        }
+
+        .cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            background: #f8f9fa;
+        }
+
+        #status {
+            margin: 20px 0;
+            font-size: 1.5rem;
+            color: #4a5568;
+            font-weight: 500;
+            min-height: 2rem;
+        }
+
+        #restart {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #restart:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #restart:active {
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
     <div class="game-container">
@@ -15,111 +105,142 @@
 
     <script>
         class Board {
+            #cells;
+
             constructor() {
-                this.cells = Array(9).fill(null);
+                this.#cells = Array(9).fill(null);
+            }
+
+            getCells() {
+                return [...this.#cells];
             }
 
             makeMove(index, symbol) {
-                if (this.cells[index] === null) {
-                    this.cells[index] = symbol;
+                if (this.isValidMove(index)) {
+                    this.#cells[index] = symbol;
                     return true;
                 }
                 return false;
             }
 
+            isValidMove(index) {
+                return this.#cells[index] === null;
+            }
+
             getWinner() {
-                const winPatterns = [
+                const winPatterns = this.#getWinPatterns();
+                return winPatterns.reduce((winner, pattern) => {
+                    if (winner) return winner;
+                    const [a, b, c] = pattern;
+                    if (this.#cells[a] && 
+                        this.#cells[a] === this.#cells[b] && 
+                        this.#cells[a] === this.#cells[c]) {
+                        return this.#cells[a];
+                    }
+                    return null;
+                }, null);
+            }
+
+            #getWinPatterns() {
+                return [
                     [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
                     [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
                     [0, 4, 8], [2, 4, 6] // Diagonals
                 ];
-
-                for (const pattern of winPatterns) {
-                    const [a, b, c] = pattern;
-                    if (this.cells[a] && 
-                        this.cells[a] === this.cells[b] && 
-                        this.cells[a] === this.cells[c]) {
-                        return this.cells[a];
-                    }
-                }
-
-                return null;
             }
 
             isFull() {
-                return !this.cells.includes(null);
+                return !this.#cells.includes(null);
+            }
+        }
+
+        class GameUI {
+            #boardElement;
+            #statusElement;
+            #restartButton;
+
+            constructor() {
+                this.#boardElement = document.getElementById('board');
+                this.#statusElement = document.getElementById('status');
+                this.#restartButton = document.getElementById('restart');
+            }
+
+            renderBoard(cells, clickHandler) {
+                this.#boardElement.innerHTML = '';
+                cells.forEach((value, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.index = index;
+                    cell.textContent = value || '';
+                    cell.addEventListener('click', () => clickHandler(cell));
+                    this.#boardElement.appendChild(cell);
+                });
+            }
+
+            updateStatus(message) {
+                this.#statusElement.textContent = message;
+            }
+
+            onRestart(handler) {
+                this.#restartButton.addEventListener('click', handler);
             }
         }
 
         class Game {
+            #board;
+            #ui;
+            #currentPlayer;
+            #gameActive;
+
             constructor() {
-                this.board = new Board();
-                this.currentPlayer = 'X';
-                this.boardElement = document.getElementById('board');
-                this.statusElement = document.getElementById('status');
-                this.restartButton = document.getElementById('restart');
-                this.gameActive = true;
+                this.#board = new Board();
+                this.#ui = new GameUI();
+                this.#currentPlayer = 'X';
+                this.#gameActive = true;
 
-                this.initializeBoard();
-                this.bindEvents();
+                this.#initialize();
             }
 
-            initializeBoard() {
-                this.boardElement.innerHTML = '';
-                for (let i = 0; i < 9; i++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.dataset.index = i;
-                    this.boardElement.appendChild(cell);
-                }
-                this.updateStatus();
+            #initialize() {
+                this.#ui.renderBoard(this.#board.getCells(), cell => this.#handleCellClick(cell));
+                this.#ui.onRestart(() => this.#restart());
+                this.#updateStatus();
             }
 
-            bindEvents() {
-                this.boardElement.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('cell')) {
-                        this.handleCellClick(e.target);
-                    }
-                });
-
-                this.restartButton.addEventListener('click', () => this.restart());
-            }
-
-            handleCellClick(cell) {
-                if (!this.gameActive) return;
+            #handleCellClick(cell) {
+                if (!this.#gameActive) return;
                 
                 const index = cell.dataset.index;
-                if (this.board.makeMove(index, this.currentPlayer)) {
-                    cell.textContent = this.currentPlayer;
-                    this.checkGameState();
-                    this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
-                    this.updateStatus();
+                if (this.#board.makeMove(index, this.#currentPlayer)) {
+                    this.#ui.renderBoard(this.#board.getCells(), cell => this.#handleCellClick(cell));
+                    this.#checkGameState();
+                    this.#currentPlayer = this.#currentPlayer === 'X' ? 'O' : 'X';
+                    this.#updateStatus();
                 }
             }
 
-            checkGameState() {
-                const winner = this.board.getWinner();
+            #checkGameState() {
+                const winner = this.#board.getWinner();
                 if (winner) {
-                    this.gameActive = false;
-                    this.statusElement.textContent = `Player ${winner} wins!`;
-                } else if (this.board.isFull()) {
-                    this.gameActive = false;
-                    this.statusElement.textContent = "It's a draw!";
+                    this.#gameActive = false;
+                    this.#ui.updateStatus(`Player ${winner} wins!`);
+                } else if (this.#board.isFull()) {
+                    this.#gameActive = false;
+                    this.#ui.updateStatus("It's a draw!");
                 }
             }
 
-            updateStatus() {
-                if (this.gameActive) {
-                    this.statusElement.textContent = `Player ${this.currentPlayer}'s turn`;
+            #updateStatus() {
+                if (this.#gameActive) {
+                    this.#ui.updateStatus(`Player ${this.#currentPlayer}'s turn`);
                 }
             }
 
-            restart() {
-                this.board = new Board();
-                this.currentPlayer = 'X';
-                this.gameActive = true;
-                this.initializeBoard();
-                Array.from(this.boardElement.children).forEach(cell => cell.textContent = '');
+            #restart() {
+                this.#board = new Board();
+                this.#currentPlayer = 'X';
+                this.#gameActive = true;
+                this.#initialize();
             }
         }
 

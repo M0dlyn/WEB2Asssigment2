@@ -3,7 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <title>Tic-Tac-Toe (Functional)</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-top: 0;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 10px;
+            margin: 30px auto;
+            padding: 15px;
+            background: #f0f4f8;
+            border-radius: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            color: #2a5298;
+        }
+
+        .cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            background: #f8f9fa;
+        }
+
+        #status {
+            margin: 20px 0;
+            font-size: 1.5rem;
+            color: #4a5568;
+            font-weight: 500;
+            min-height: 2rem;
+        }
+
+        #restart {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #restart:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #restart:active {
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
     <div class="game-container">
@@ -14,123 +104,146 @@
     </div>
 
     <script>
-        // Game state
-        const createGameState = () => ({
+        // Immutable game state
+        const createGameState = () => Object.freeze({
             board: Array(9).fill(null),
             currentPlayer: 'X',
-            gameActive: true
+            gameActive: true,
+            status: "Player X's turn"
         });
 
         // Pure functions for game logic
         const makeMove = (state, index) => {
-            if (!state.gameActive || state.board[index] !== null) {
+            if (!isValidMove(state, index)) {
                 return state;
             }
 
-            return {
+            return Object.freeze({
                 ...state,
-                board: state.board.map((cell, i) => 
-                    i === index ? state.currentPlayer : cell
-                ),
-                currentPlayer: state.currentPlayer === 'X' ? 'O' : 'X'
-            };
+                board: updateBoard(state.board, index, state.currentPlayer),
+                currentPlayer: switchPlayer(state.currentPlayer)
+            });
         };
 
-        const getWinner = (board) => {
+        const isValidMove = (state, index) => 
+            state.gameActive && state.board[index] === null;
+
+        const updateBoard = (board, index, symbol) =>
+            board.map((cell, i) => i === index ? symbol : cell);
+
+        const switchPlayer = player => 
+            player === 'X' ? 'O' : 'X';
+
+        const getWinner = board => {
             const winPatterns = [
                 [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
                 [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
                 [0, 4, 8], [2, 4, 6] // Diagonals
             ];
 
-            return winPatterns.reduce((winner, [a, b, c]) => {
-                if (winner) return winner;
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    return board[a];
-                }
-                return null;
-            }, null);
+            return pipe(
+                winPatterns,
+                patterns => patterns.find(pattern => isWinningPattern(board, pattern)),
+                maybePattern => maybePattern ? board[maybePattern[0]] : null
+            );
         };
 
-        const isBoardFull = (board) => !board.includes(null);
+        const isWinningPattern = (board, [a, b, c]) =>
+            board[a] && board[a] === board[b] && board[a] === board[c];
 
-        const updateGameStatus = (state) => {
+        const isBoardFull = board => 
+            board.every(cell => cell !== null);
+
+        // Function composition utility
+        const pipe = (value, ...fns) => 
+            fns.reduce((result, fn) => fn(result), value);
+
+        // Game state updates
+        const updateGameStatus = state => {
             const winner = getWinner(state.board);
             if (winner) {
-                return {
+                return Object.freeze({
                     ...state,
                     gameActive: false,
                     status: `Player ${winner} wins!`
-                };
+                });
             }
             if (isBoardFull(state.board)) {
-                return {
+                return Object.freeze({
                     ...state,
                     gameActive: false,
                     status: "It's a draw!"
-                };
+                });
             }
-            return {
+            return Object.freeze({
                 ...state,
                 status: `Player ${state.currentPlayer}'s turn`
-            };
+            });
         };
 
-        // DOM manipulation functions
-        const renderBoard = (state, boardElement) => {
-            boardElement.innerHTML = '';
+        // Pure UI rendering functions
+        const createCell = (value, index, clickHandler) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = index;
+            cell.textContent = value || '';
+            cell.addEventListener('click', () => clickHandler(index));
+            return cell;
+        };
+
+        const renderBoard = (state, boardElement, clickHandler) => {
+            const newBoard = document.createElement('div');
+            newBoard.className = 'board';
+            newBoard.id = 'board';
+            
             state.board.forEach((value, index) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.index = index;
-                cell.textContent = value || '';
-                boardElement.appendChild(cell);
+                newBoard.appendChild(createCell(value, index, clickHandler));
             });
+            
+            boardElement.replaceWith(newBoard);
+            return newBoard;
         };
 
         const updateStatus = (state, statusElement) => {
             statusElement.textContent = state.status;
         };
 
-        // Event handlers
-        const handleCellClick = (event, state, updateState) => {
-            if (!event.target.classList.contains('cell')) return;
-            
-            const index = parseInt(event.target.dataset.index);
-            const newState = makeMove(state, index);
-            updateState(updateGameStatus(newState));
-        };
-
-        // Initialize game
-        const initGame = () => {
+        // Event handling with state updates
+        const createGameController = (initialState = createGameState()) => {
             const boardElement = document.getElementById('board');
             const statusElement = document.getElementById('status');
             const restartButton = document.getElementById('restart');
             
-            let state = updateGameStatus(createGameState());
+            let state = initialState;
 
-            const updateState = (newState) => {
-                state = newState;
-                renderBoard(state, boardElement);
+            const updateState = newState => {
+                state = updateGameStatus(newState);
+                renderBoard(state, boardElement, handleCellClick);
                 updateStatus(state, statusElement);
             };
 
-            // Event listeners
-            boardElement.addEventListener('click', (e) => 
-                handleCellClick(e, state, updateState)
-            );
+            const handleCellClick = index => {
+                updateState(makeMove(state, index));
+            };
 
-            restartButton.addEventListener('click', () => 
-                updateState(updateGameStatus(createGameState()))
-            );
+            const handleRestart = () => {
+                updateState(createGameState());
+            };
+
+            // Event bindings
+            restartButton.addEventListener('click', handleRestart);
 
             // Initial render
-            renderBoard(state, boardElement);
-            updateStatus(state, statusElement);
+            updateState(state);
+
+            return {
+                getState: () => state,
+                restart: handleRestart
+            };
         };
 
         // Start the game
-        initGame();
+        const game = createGameController();
     </script>
 </body>
 </html>

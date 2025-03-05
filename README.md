@@ -4,17 +4,6 @@ This project implements two versions of the classic Tic-Tac-Toe game using diffe
 1. Object-Oriented Programming (OOP)
 2. Functional Programming
 
-## Project Structure
-
-```
-├── css/
-│   └── styles.css          # Shared styles for both implementations
-├── js/
-│   ├── oo-game.js         # Object-oriented implementation
-│   └── functional-game.js  # Functional implementation
-├── oo.html                 # OOP version entry point
-└── fun.html               # Functional version entry point
-```
 
 ## Features
 

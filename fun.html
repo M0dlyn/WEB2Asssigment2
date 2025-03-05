@@ -192,16 +192,11 @@
         };
 
         const renderBoard = (state, boardElement, clickHandler) => {
-            const newBoard = document.createElement('div');
-            newBoard.className = 'board';
-            newBoard.id = 'board';
-            
+            boardElement.innerHTML = '';
             state.board.forEach((value, index) => {
-                newBoard.appendChild(createCell(value, index, clickHandler));
+                boardElement.appendChild(createCell(value, index, clickHandler));
             });
-            
-            boardElement.replaceWith(newBoard);
-            return newBoard;
+            return boardElement;
         };
 
         const updateStatus = (state, statusElement) => {

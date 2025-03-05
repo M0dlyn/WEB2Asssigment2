@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic-Tac-Toe (Functional)</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Tic-Tac-Toe</h1>
+        <div id="status"></div>
+        <div class="board" id="board"></div>
+        <button id="restart">Restart Game</button>
+    </div>
+
+    <script>
+        // Game state
+        const createGameState = () => ({
+            board: Array(9).fill(null),
+            currentPlayer: 'X',
+            gameActive: true
+        });
+
+        // Pure functions for game logic
+        const makeMove = (state, index) => {
+            if (!state.gameActive || state.board[index] !== null) {
+                return state;
+            }
+
+            return {
+                ...state,
+                board: state.board.map((cell, i) => 
+                    i === index ? state.currentPlayer : cell
+                ),
+                currentPlayer: state.currentPlayer === 'X' ? 'O' : 'X'
+            };
+        };
+
+        const getWinner = (board) => {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6] // Diagonals
+            ];
+
+            return winPatterns.reduce((winner, [a, b, c]) => {
+                if (winner) return winner;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+                return null;
+            }, null);
+        };
+
+        const isBoardFull = (board) => !board.includes(null);
+
+        const updateGameStatus = (state) => {
+            const winner = getWinner(state.board);
+            if (winner) {
+                return {
+                    ...state,
+                    gameActive: false,
+                    status: `Player ${winner} wins!`
+                };
+            }
+            if (isBoardFull(state.board)) {
+                return {
+                    ...state,
+                    gameActive: false,
+                    status: "It's a draw!"
+                };
+            }
+            return {
+                ...state,
+                status: `Player ${state.currentPlayer}'s turn`
+            };
+        };
+
+        // DOM manipulation functions
+        const renderBoard = (state, boardElement) => {
+            boardElement.innerHTML = '';
+            state.board.forEach((value, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = index;
+                cell.textContent = value || '';
+                boardElement.appendChild(cell);
+            });
+        };
+
+        const updateStatus = (state, statusElement) => {
+            statusElement.textContent = state.status;
+        };
+
+        // Event handlers
+        const handleCellClick = (event, state, updateState) => {
+            if (!event.target.classList.contains('cell')) return;
+            
+            const index = parseInt(event.target.dataset.index);
+            const newState = makeMove(state, index);
+            updateState(updateGameStatus(newState));
+        };
+
+        // Initialize game
+        const initGame = () => {
+            const boardElement = document.getElementById('board');
+            const statusElement = document.getElementById('status');
+            const restartButton = document.getElementById('restart');
+            
+            let state = updateGameStatus(createGameState());
+
+            const updateState = (newState) => {
+                state = newState;
+                renderBoard(state, boardElement);
+                updateStatus(state, statusElement);
+            };
+
+            // Event listeners
+            boardElement.addEventListener('click', (e) => 
+                handleCellClick(e, state, updateState)
+            );
+
+            restartButton.addEventListener('click', () => 
+                updateState(updateGameStatus(createGameState()))
+            );
+
+            // Initial render
+            renderBoard(state, boardElement);
+            updateStatus(state, statusElement);
+        };
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
